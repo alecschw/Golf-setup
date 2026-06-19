@@ -91,7 +91,6 @@
   .stage{margin:14px 18px 0;border-radius:14px;overflow:hidden;border:1px solid var(--line);
     box-shadow:0 4px 14px rgba(14,31,22,0.08);}
   svg.diagram{display:block;width:100%;height:auto;background:#dceede;}
-  svg.slope-inset{border-top:2px dashed rgba(20,53,36,0.18);background:#eef5ec;}
 
   /* ===== SPEC STRIP ===== */
   .specs{margin:14px 18px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
@@ -187,7 +186,7 @@
       </div>
     </div>
     <div class="ctl-row" id="row-slope">
-      <span class="ctl-lbl">Lie</span>
+      <span class="ctl-lbl">Slope</span>
       <div class="ctl-btns five">
         <button id="sl-flat" class="ctl on" onclick="setSlope('flat')">Flat</button>
         <button id="sl-uphill" class="ctl" onclick="setSlope('uphill')">Uphill</button>
@@ -196,11 +195,20 @@
         <button id="sl-below" class="ctl" onclick="setSlope('below')">Below</button>
       </div>
     </div>
+    <div class="ctl-row" id="row-lie">
+      <span class="ctl-lbl">Surface</span>
+      <div class="ctl-btns five">
+        <button id="li-fairway" class="ctl on" onclick="setLie('fairway')">Fairway</button>
+        <button id="li-fringe" class="ctl" onclick="setLie('fringe')">Fringe</button>
+        <button id="li-lightrough" class="ctl" onclick="setLie('lightrough')">Lt Rough</button>
+        <button id="li-heavyrough" class="ctl" onclick="setLie('heavyrough')">Hvy Rough</button>
+        <button id="li-hardpan" class="ctl" onclick="setLie('hardpan')">Hardpan</button>
+      </div>
+    </div>
   </div>
 
   <div class="stage">
     <svg class="diagram" id="svg-top" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"></svg>
-    <svg class="diagram slope-inset" id="svg-slope" viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="display:none"></svg>
   </div>
 
   <div class="specs">
@@ -238,28 +246,49 @@
 const SHOTS = [
   { id:"driver", short:"Driver", cat:"Woods · Full Swing", title:"Driver",
     desc:"Widest stance in the bag. Ball teed up off the lead heel for an ascending, upward strike.",
-    ballPos:88, width:0.92, openness:0, weightTrail:55, tee:true, clubLen:1.0, shaftLean:-6, spineTilt:-8,
+    ballPos:88, width:0.92, openness:0, weightTrail:55, tee:true, clubLen:1.0, shaftLean:-6, spineTilt:-8, trajable:true, slopeable:true, full:true,
     s_width:"Widest — outside shoulders", s_ball:"Off lead heel", s_attack:"Ascending +2° to +5°", s_tilt:"Tilted away from target",
     s_weight:"55% Trail / 45% Lead", shapeable:true,
     grip:"Neutral grip, full length. Light, tension-free hands so the clubhead can release for speed.", gripPressure:4,
     think:"Tee it high, let it fly. The upward hit is built at address — ball forward and spine tilted back do the work." },
   { id:"fairway", short:"Fairway Wd", cat:"Woods · Full Swing", title:"Fairway Wood",
     desc:"Just inside driver width. Ball one ball-width inside the lead heel for a shallow, sweeping strike.",
-    ballPos:78, width:0.82, openness:0, weightTrail:50, tee:false, clubLen:0.94, shaftLean:0, spineTilt:-4, trajable:true, slopeable:true,
+    ballPos:78, width:0.82, openness:0, weightTrail:50, tee:false, clubLen:0.94, shaftLean:0, spineTilt:-4, trajable:true, slopeable:true, full:true,
     s_width:"Shoulder-width", s_ball:"Inside lead heel", s_attack:"Level / sweeping", s_tilt:"Slightly back",
     s_weight:"50% / 50% — even", shapeable:true,
     grip:"Neutral, full length. Smooth, light pressure — sweep it, don’t grab.", gripPressure:4,
     think:"Sweep it clean off the turf. Don't try to lift it — trust the loft and brush the grass." },
-  { id:"iron", short:"Mid Iron", cat:"Irons · Full Swing", title:"Mid Iron",
-    desc:"Shoulder-width stance, ball just ahead of center. Slightly descending strike to compress the ball.",
-    ballPos:62, width:0.74, openness:0, weightTrail:50, tee:false, clubLen:0.82, shaftLean:6, spineTilt:0, trajable:true, slopeable:true,
-    s_width:"Shoulder-width", s_ball:"Just ahead of center", s_attack:"Descending −2° to −4°", s_tilt:"Neutral",
+  { id:"hybrid", short:"Hybrid", cat:"Woods · Full Swing", title:"Hybrid / Rescue",
+    desc:"Between a fairway wood and a long iron. Ball just forward of center, near shoulder-width. Shallow, sweeping strike — slightly down but not a deep divot.",
+    ballPos:68, width:0.78, openness:0, weightTrail:50, tee:false, clubLen:0.9, shaftLean:2, spineTilt:-3, trajable:true, slopeable:true, full:true,
+    s_width:"Just inside shoulder-width", s_ball:"Forward of center", s_attack:"Shallow / slightly descending", s_tilt:"Slightly back",
     s_weight:"50% / 50% — even", shapeable:true,
-    grip:"Neutral, full length. Constant, medium pressure from takeaway through finish.", gripPressure:5,
-    think:"Ball first, then turf. The divot starts after the ball. Compress down to make it climb." },
+    grip:"Neutral, full length. Smooth, light-medium pressure — sweep it like a wood.", gripPressure:4,
+    think:"Treat it like a long iron you can sweep. Ball just forward, brush the turf — let the wide sole glide, don't dig." },
+  { id:"iron46", short:"4–6 Iron", cat:"Irons · Full Swing", title:"Long Iron (4–6)",
+    desc:"Shoulder-width, ball a touch forward of center. Shallow, gathering strike — sweep more than dig. Longer shaft stands you a hair taller.",
+    ballPos:64, width:0.78, openness:0, weightTrail:50, tee:false, clubLen:0.86, shaftLean:4, spineTilt:-1, trajable:true, slopeable:true, full:true,
+    s_width:"Shoulder-width", s_ball:"Slightly ahead of center", s_attack:"Shallow −1° to −3°", s_tilt:"Neutral / slightly back",
+    s_weight:"50% / 50% — even", shapeable:true,
+    grip:"Neutral, full length. Smooth, even pressure — sweep, don't force it.", gripPressure:5,
+    think:"Sweep it off the turf — shallow divot at most. Ball slightly forward; let the longer club do the work, don't try to lift it." },
+  { id:"iron79", short:"7–9 Iron", cat:"Irons · Full Swing", title:"Short Iron (7–9)",
+    desc:"Shoulder-width or a hair narrower, ball at center. Descending strike — ball first, then turf, with a real divot.",
+    ballPos:54, width:0.72, openness:0, weightTrail:50, tee:false, clubLen:0.8, shaftLean:8, spineTilt:1, trajable:true, slopeable:true, full:true,
+    s_width:"Shoulder-width or hair narrower", s_ball:"Center", s_attack:"Descending −3° to −5°", s_tilt:"Neutral / slight forward",
+    s_weight:"50% / 50% — even", shapeable:true,
+    grip:"Neutral, choke down a touch. Constant medium pressure through the strike.", gripPressure:5,
+    think:"Ball first, then turf — divot starts after the ball. Hands lead slightly; compress down to make it climb and stop." },
+  { id:"knockdown", short:"Knockdown", cat:"Irons · Control", title:"Knockdown / Three-Quarter",
+    desc:"A controlled, lower full-swing shot. Choke down, ball center-back, weight a touch forward. Three-quarter back, three-quarter through — smooth, not hard.",
+    ballPos:46, width:0.68, openness:0, weightTrail:45, tee:false, clubLen:0.8, shaftLean:12, spineTilt:1, trajable:false, slopeable:true, full:true,
+    s_width:"Slightly narrow, choke down", s_ball:"Center-back", s_attack:"Descending, controlled", s_tilt:"Slight lean to target",
+    s_weight:"45% Trail / 55% Lead", shapeable:true,
+    grip:"Choke down 1 inch, slightly firmer hands for a controlled, smooth release.", gripPressure:6,
+    think:"Take one more club and swing easy — three-quarter back and through. Ball center-back, hands ahead, lower finish. Smooth beats hard for control and a flatter flight." },
   { id:"wedge", short:"Wedge", cat:"Irons · Full Swing", title:"Short Iron / Wedge",
     desc:"Narrower, slightly open stance. Ball center. Steeper angle for spin and control.",
-    ballPos:50, width:0.6, openness:14, weightTrail:45, tee:false, clubLen:0.72, shaftLean:10, spineTilt:2, trajable:true, slopeable:true,
+    ballPos:50, width:0.6, openness:14, weightTrail:45, tee:false, clubLen:0.72, shaftLean:10, spineTilt:2, trajable:true, slopeable:true, full:true,
     s_width:"Narrow — inside hips", s_ball:"Center of stance", s_attack:"Steep −4° to −6°", s_tilt:"Slight lean to target",
     s_weight:"45% Trail / 55% Lead",
     grip:"Neutral, choke down slightly. Quiet hands, medium pressure for control.", gripPressure:5,
@@ -287,7 +316,7 @@ const SHOTS = [
     think:"Hit the sand, not the ball. Open the face, dig your feet in, and accelerate — never quit." },
   { id:"punch", short:"Punch", cat:"Utility · Low Flight", title:"Punch / Knockdown",
     desc:"Ball back, hands forward, choke down. Short, controlled swing for a low, boring trajectory under wind or branches.",
-    ballPos:40, width:0.7, openness:0, weightTrail:40, tee:false, clubLen:0.8, shaftLean:16, spineTilt:2, shapeable:true, slopeable:true,
+    ballPos:40, width:0.7, openness:0, weightTrail:40, tee:false, clubLen:0.8, shaftLean:16, spineTilt:2, shapeable:true, slopeable:true, full:true,
     s_width:"Shoulder-width, choke down", s_ball:"Center-back", s_attack:"Descending, low launch", s_tilt:"Slight lean to target",
     s_weight:"40% Trail / 60% Lead",
     grip:"Choke down 1–2 inches. Firmer than normal for a controlled, abbreviated release.", gripPressure:7,
@@ -301,7 +330,7 @@ const SHOTS = [
     think:"Lay the face wide open, open your stance to match, and accelerate under the ball. Commit fully — a soft hand stops it dead." },
   { id:"stinger", short:"Stinger", cat:"Utility · Penetrating", title:"Stinger",
     desc:"Long iron or driving club. Ball center, hands well ahead, wide stable base. Trap it low and hold the finish down.",
-    ballPos:56, width:0.86, openness:0, weightTrail:45, tee:false, clubLen:0.92, shaftLean:12, spineTilt:-2, shapeable:true, slopeable:true,
+    ballPos:56, width:0.86, openness:0, weightTrail:45, tee:false, clubLen:0.92, shaftLean:12, spineTilt:-2, shapeable:true, slopeable:true, full:true,
     s_width:"Wide, stable base", s_ball:"Center", s_attack:"Shallow, low launch", s_tilt:"Neutral / slight forward",
     s_weight:"45% Trail / 55% Lead",
     grip:"Choke down, hands well ahead. Firm, connected grip to trap it and hold it low.", gripPressure:6,
@@ -367,11 +396,30 @@ const SLOPES = {
     think:"Ball below your feet is farther away — hold the club at full length, add knee flex, and stay down through impact. It curves right — aim left." }
 };
 
+/* Lie condition presets — surface the ball is sitting on. These mainly affect club choice,
+   spin/flyer expectation, and grip pressure, not your address geometry — so no stance change. */
+const LIES = {
+  fairway:{ name:"Fairway", dPress:0, label:null, think:null },
+  fringe:{ name:"Fringe", dPress:0, label:"FRINGE / FIRST CUT",
+    gripNote:"normal hold",
+    think:"Clean lie, ball sitting up slightly. Plays almost like the fairway — make normal contact. From just off the green you can also putt it or bump a low runner." },
+  lightrough:{ name:"Light Rough", dPress:+1, label:"LIGHT ROUGH · flyer risk",
+    gripNote:"slightly firmer — grass will grab",
+    think:"Grass between club and ball kills spin, so expect a FLYER that flies farther and releases. Take one less club, grip a touch firmer, and make a slightly steeper, ball-first swing." },
+  heavyrough:{ name:"Heavy Rough", dPress:+3, label:"HEAVY ROUGH · get it out",
+    gripNote:"firm grip — grass will twist the face",
+    think:"Priority is escape, not distance. Take more loft, grip firmly so the rough can't shut the face, play the ball back, and swing steep and aggressive to chop it out. Don't be a hero." },
+  hardpan:{ name:"Hardpan", dPress:+1, label:"HARDPAN / TIGHT LIE",
+    gripNote:"steady hands, ball-first",
+    think:"No cushion under the ball — catch it ball-first with a clean, slightly descending strike. Move the ball back a touch, weight forward, and use a lower-bounce club so the leading edge doesn't bounce into a thin shot." }
+};
+
 let idx = 0;
 let hand = 'R';            // 'R' right-handed, 'L' left-handed
 let shape = 'straight';
 let traj = 'normal';
 let slope = 'flat';
+let lie = 'fairway';       // surface condition (full-swing shots only)
 
 /* Mirror left/right wording for a left-handed player. */
 function hw(str){
@@ -388,7 +436,7 @@ function effShot(){
   const base = SHOTS[idx];
   const o = Object.assign({}, base);
   let think = base.think;
-  o.shapeLabel = null; o.trajLabel = null; o.slopeLabel = null; o.slopeProfile = null;
+  o.shapeLabel = null; o.trajLabel = null; o.slopeLabel = null; o.slopeProfile = null; o.lieLabel = null;
 
   if(base.shapeable && shape!=='straight'){
     const d=SHAPES[shape];
@@ -414,11 +462,18 @@ function effShot(){
     o.slopeProfile = d;
     think = d.think;
   }
-  // ---- grip pressure + note (base, adjusted by flight/lie) ----
+  // ---- lie condition (full-swing shots): affects club/spin expectation + grip, not stance ----
+  if(base.full && lie!=='fairway'){
+    const d=LIES[lie];
+    o.lieLabel = d.label;
+    if(d.think) think = d.think;
+  }
+  // ---- grip pressure + note (base, adjusted by flight/lie-slope/lie-condition) ----
   let press = base.gripPressure;
   let gripNotes = [];
   if(base.trajable && traj!=='normal'){ const d=TRAJ[traj]; press+=(d.dPress||0); if(d.gripNote) gripNotes.push(d.gripNote); }
   if(base.slopeable && slope!=='flat'){ const d=SLOPES[slope]; press+=(d.dPress||0); if(d.gripNote) gripNotes.push(d.gripNote); }
+  if(base.full && lie!=='fairway'){ const d=LIES[lie]; press+=(d.dPress||0); if(d.gripNote) gripNotes.push(d.gripNote); }
   o.gripPressureEff = clamp(press,1,10);
   o.gripEff = base.grip + (gripNotes.length ? '  ·  ' + gripNotes.join('; ') : '');
 
@@ -436,7 +491,7 @@ SHOTS.forEach((s,i)=>{
   pillsEl.appendChild(b);
 });
 
-function resetMods(){ shape='straight'; traj='normal'; slope='flat'; }
+function resetMods(){ shape='straight'; traj='normal'; slope='flat'; lie='fairway'; }
 function setHand(h){ hand=h;
   document.getElementById('h-R').classList.toggle('on',h==='R');
   document.getElementById('h-L').classList.toggle('on',h==='L');
@@ -445,6 +500,7 @@ function setHand(h){ hand=h;
 function setShape(v){ shape=v; render(); }
 function setTraj(v){ traj=v; render(); }
 function setSlope(v){ slope=v; render(); }
+function setLie(v){ lie=v; render(); }
 function step(d){ idx=Math.max(0,Math.min(SHOTS.length-1,idx+d)); resetMods(); render(); }
 
 /* ============ HELPERS ============ */
@@ -455,22 +511,92 @@ function txt(x,y,str,attrs){ const t=el('text',Object.assign({x,y},attrs)); t.te
 /* ============ TOP-DOWN VIEW ============ */
 /* Looking straight down. Target is to the RIGHT. Ball sits on the target line.
    Player stands below the line (behind ball). Lead foot = right, trail foot = left. */
+/* ---- G/FORE Gallivanter-style top-down golf shoe on the "Classic" silhouette ---- */
+function _cr(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return [
+  0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3),
+  0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3)];}
+function _smooth(pts,n){const ext=[pts[0],...pts,pts[pts.length-1]],out=[];
+  for(let i=1;i<ext.length-2;i++) for(let k=0;k<n;k++) out.push(_cr(ext[i-1],ext[i],ext[i+1],ext[i+2],k/n));
+  out.push(pts[pts.length-1]); return out;}
+function _pathFrom(poly){let d='M '+poly[0][0].toFixed(1)+','+poly[0][1].toFixed(1);
+  for(let i=1;i<poly.length;i++) d+=' L '+poly[i][0].toFixed(1)+','+poly[i][1].toFixed(1); return d+' Z';}
+function _inset(poly,fx,fy){let cx=0,cy=0; poly.forEach(p=>{cx+=p[0];cy+=p[1];}); cx/=poly.length; cy/=poly.length;
+  return poly.map(p=>[cx+(p[0]-cx)*fx, cy+(p[1]-cy)*fy]);}
+function _ell(cx,cy,rx,ry,n){n=n||40; const o=[]; for(let i=0;i<=n;i++){const a=2*Math.PI*i/n; o.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]);} return o;}
+const NAVY='#1b2238', NAVYD='#0c1226', WHITE='#fcfcfa';
+
+function addShoe(svg,cx,cy,L,Wd,angle,mir){
+  const g=el('g',{transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)}) rotate(${angle.toFixed(1)}) scale(${mir},1)`});
+  const hw=Wd/2;
+  // "Classic" silhouette A: long toe, instep waist, narrow heel (big toe on medial / x<0)
+  const sole=_smooth([[-0.06*hw,-0.50*L],[0.42*hw,-0.46*L],[0.74*hw,-0.34*L],[0.86*hw,-0.16*L],
+    [0.80*hw,0.04*L],[0.62*hw,0.22*L],[0.60*hw,0.36*L],[0.40*hw,0.46*L],[0.0,0.50*L],
+    [-0.40*hw,0.46*L],[-0.58*hw,0.34*L],[-0.50*hw,0.18*L],[-0.62*hw,-0.02*L],
+    [-0.84*hw,-0.20*L],[-0.80*hw,-0.36*L],[-0.46*hw,-0.47*L]],14);
+  const upper=_inset(sole,0.90,0.93);
+  const openCY=0.26*L;
+  const collar=_ell(0,openCY,0.34*hw,0.18*L,40);
+  const lining=_ell(0,openCY,0.25*hw,0.14*L,40);
+  const tongue=_smooth([[-0.15*hw,openCY-0.03*L],[-0.17*hw,0.04*L],[0,0.0],[0.17*hw,0.04*L],[0.15*hw,openCY-0.03*L]],10);
+  const saddle=_smooth([[-0.74*hw,0.12*L],[-0.80*hw,0.0],[-0.45*hw,-0.06*L],[0,-0.04*L],[0.45*hw,-0.06*L],
+    [0.74*hw,0.0],[0.70*hw,0.12*L],[0.40*hw,0.08*L],[0,0.06*L],[-0.40*hw,0.08*L]],14);
+  // flip base outline horizontally so the foot side reads correctly (big toe now on lateral base)
+  [sole,upper,tongue].forEach(poly=>poly.forEach(p=>{p[0]=-p[0];}));
+  // shadow + navy sole trim + white upper
+  g.appendChild(el('path',{d:_pathFrom(sole),fill:'rgba(0,0,0,0.13)',transform:'translate(1.4,3)'}));
+  g.appendChild(el('path',{d:_pathFrom(sole),fill:NAVY}));
+  g.appendChild(el('path',{d:_pathFrom(upper),fill:WHITE,stroke:'#cdd1cd','stroke-width':0.6}));
+  // collar + green lining + tongue
+  g.appendChild(el('path',{d:_pathFrom(collar),fill:NAVY}));
+  g.appendChild(el('path',{d:_pathFrom(lining),fill:'#16623f'}));
+  g.appendChild(el('path',{d:_pathFrom(lining),fill:'none',stroke:'#2a64b0','stroke-width':1,opacity:0.55}));
+  g.appendChild(el('path',{d:_pathFrom(tongue),fill:NAVY}));
+  // saddle band
+  g.appendChild(el('path',{d:_pathFrom(saddle),fill:NAVY}));
+  // navy laces (X)
+  const lx=hw*0.26, rows=[-0.14,-0.075,-0.01,0.05];
+  for(let i=0;i<rows.length-1;i++){ const y1=rows[i]*L,y2=rows[i+1]*L;
+    g.appendChild(el('line',{x1:(-lx).toFixed(1),y1:y1.toFixed(1),x2:lx.toFixed(1),y2:y2.toFixed(1),stroke:NAVYD,'stroke-width':Math.max(1.3,Wd*0.028),'stroke-linecap':'round'}));
+    g.appendChild(el('line',{x1:lx.toFixed(1),y1:y1.toFixed(1),x2:(-lx).toFixed(1),y2:y2.toFixed(1),stroke:NAVYD,'stroke-width':Math.max(1.3,Wd*0.028),'stroke-linecap':'round'})); }
+  rows.forEach(r=>{ [-1,1].forEach(s=> g.appendChild(el('circle',{cx:(s*lx).toFixed(1),cy:(r*L).toFixed(1),r:Math.max(0.9,Wd*0.018),fill:'#05070f'}))); });
+  svg.appendChild(g);
+}
+
+
+
 function drawTop(s){
   const svg=document.getElementById('svg-top');
   svg.innerHTML='';
   const W=400,H=300;
-  const lineY=120;                      // target line (ball-to-target) height
+  const PPI=8;                          // pixels per inch — everything below is to scale
   const cx=200;                         // center of stance
-  const maxHalf=120;                    // max half stance width in px
-  const half=maxHalf*s.width;           // half stance width
-  const footY=190;                      // baseline foot depth (square)
+  const lineY=106;                      // target (ball) line
+  const shoeLen=11.8*PPI, shoeWid=4.0*PPI;   // size-11 golf shoe (≈11.8" × 4.0")
+  const ballR=1.68*PPI/2;               // 1.68" regulation ball
+  const stanceIn=s.width*21.7;          // real stance width, heel-center to heel-center
+  const half=(stanceIn/2)*PPI;          // half stance in px
+  const footY=lineY+12+shoeLen/2;       // toe sits just below the ball line (depth compressed)
   const open=s.openness;                // degrees of stance openness
 
-  // grass background
-  svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#cfe6cf'}));
-  // mowing stripes
-  for(let i=0;i<8;i++){
-    svg.appendChild(el('rect',{x:i*50,y:0,width:25,height:H,fill:'#c6e0c6',opacity:0.5}));
+  // ---- playing surface: fairway stripes, sand (bunkers), or green (putting) ----
+  const bgKind = (s.id==='bunker'||s.id==='fairwaybunker') ? 'sand'
+               : (s.id==='putt' ? 'green' : 'fairway');
+  if(bgKind==='sand'){
+    svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#e7d7a6'}));
+    // faint rake lines
+    for(let i=-24;i<W+24;i+=15){
+      svg.appendChild(el('path',{d:`M ${i},0 Q ${i+18},${H/2} ${i},${H}`,fill:'none',stroke:'#d6c389','stroke-width':2,opacity:0.45}));
+    }
+    // a few grains
+    [[60,70],[150,40],[300,90],[210,200],[340,180],[90,230]].forEach(p=>
+      svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:1,fill:'#c9b574',opacity:0.5})));
+  } else if(bgKind==='green'){
+    svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#84c089'}));
+    for(let i=0;i<W;i+=26){ svg.appendChild(el('rect',{x:i,y:0,width:13,height:H,fill:'#ffffff',opacity:0.10})); }
+  } else {
+    svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#96ba8c'}));
+    const bw=Math.round(W/9);
+    for(let i=0;i<W;i+=bw){ if(Math.floor(i/bw)%2===0) svg.appendChild(el('rect',{x:i,y:0,width:bw,height:H,fill:'#a1c597'})); }
   }
 
   // Handedness: lead/target side. Righty → lead & target on the LEFT (sideSign −1).
@@ -487,6 +613,11 @@ function drawTop(s){
   svg.appendChild(el('path',{d:`M${fx},${lineY-22} L${fx+flagDir*14},${lineY-17} L${fx},${lineY-12} Z`,fill:'#D6573B'}));
   svg.appendChild(txt(fx-flagDir*30,lineY-26,'TARGET',{'font-family':'DM Mono,monospace','font-size':9,
     fill:'#143524','letter-spacing':'0.1em','text-anchor':'middle'}));
+  // putting green: draw the hole cup at the flag base
+  if(s.id==='putt'){
+    svg.appendChild(el('ellipse',{cx:fx,cy:lineY,rx:4.6,ry:2.7,fill:'#23241f'}));
+    svg.appendChild(el('ellipse',{cx:fx,cy:lineY-0.6,rx:4.6,ry:2.4,fill:'none',stroke:'#f4f1e6','stroke-width':0.6,opacity:0.55}));
+  }
 
   // FEET — LEAD foot on the target side, TRAIL foot opposite.
   // Signed openness: open (+) drops the LEAD foot back toward the viewer;
@@ -498,35 +629,24 @@ function drawTop(s){
 
   // stance line (foot-line) — angled when open or closed
   svg.appendChild(el('line',{x1:leadX,y1:leadY,x2:trailX,y2:trailY,stroke:'#1E4D33',
-    'stroke-width':1.5,'stroke-dasharray':'4 4',opacity:0.35}));
+    'stroke-width':1.5,'stroke-dasharray':'4 4',opacity:0.3}));
 
-  // shoe drawing helper (oval pointing UP toward the ball line, flared by angle)
-  function shoe(x,y,flareDeg,lead){
-    const g=el('g',{transform:`translate(${x},${y}) rotate(${flareDeg})`});
-    // sole shadow
-    g.appendChild(el('ellipse',{cx:0,cy:3,rx:15,ry:30,fill:'rgba(0,0,0,0.12)'}));
-    // shoe body
-    g.appendChild(el('ellipse',{cx:0,cy:0,rx:14,ry:28,fill: lead?'#244a36':'#2c5a40'}));
-    // toe cap
-    g.appendChild(el('ellipse',{cx:0,cy:-16,rx:11,ry:12,fill:'rgba(255,255,255,0.12)'}));
-    // laces
-    for(let i=-1;i<=1;i++) g.appendChild(el('line',{x1:-6,y1:i*5,x2:6,y2:i*5,stroke:'rgba(255,255,255,0.35)','stroke-width':1.2}));
-    return g;
-  }
-  // lead foot flares toward target (toward the lead side); trail flares for closed stance
+  // lead foot flares toward target; trail flares slightly outward (more if closed)
   const leadFlare=18+Math.max(0,open)*0.4;
-  const trailFlare=open<0 ? 8+m*0.3 : (open>20?8:0);
-  svg.appendChild(shoe(leadX,leadY,sideSign*leadFlare,true));
-  svg.appendChild(shoe(trailX,trailY,-sideSign*trailFlare,false));
+  const trailFlare=open<0 ? 8+m*0.3 : (open>20?8:5);
+  // each foot mirrors the other; big-toe side faces inward (toward the other foot)
+  addShoe(svg,leadX,leadY,shoeLen,shoeWid, sideSign*leadFlare, (leadX<trailX?1:-1));
+  addShoe(svg,trailX,trailY,shoeLen,shoeWid, -sideSign*trailFlare, (trailX<leadX?1:-1));
 
-  // foot labels + weight %
-  svg.appendChild(txt(trailX,trailY+46,'TRAIL',{'font-family':'DM Mono,monospace','font-size':9,
+  // foot labels + weight % (below each heel)
+  const labOff=shoeLen/2+13;
+  svg.appendChild(txt(trailX,trailY+labOff,'TRAIL',{'font-family':'DM Mono,monospace','font-size':9,
     fill:'#143524','text-anchor':'middle','letter-spacing':'0.08em'}));
-  svg.appendChild(txt(trailX,trailY+58,s.weightTrail+'%',{'font-family':'DM Mono,monospace','font-size':11,
+  svg.appendChild(txt(trailX,trailY+labOff+12,s.weightTrail+'%',{'font-family':'DM Mono,monospace','font-size':11,
     fill:'#1E4D33','font-weight':'700','text-anchor':'middle'}));
-  svg.appendChild(txt(leadX,leadY+46,'LEAD',{'font-family':'DM Mono,monospace','font-size':9,
+  svg.appendChild(txt(leadX,leadY+labOff,'LEAD',{'font-family':'DM Mono,monospace','font-size':9,
     fill:'#143524','text-anchor':'middle','letter-spacing':'0.08em'}));
-  svg.appendChild(txt(leadX,leadY+58,(100-s.weightTrail)+'%',{'font-family':'DM Mono,monospace','font-size':11,
+  svg.appendChild(txt(leadX,leadY+labOff+12,(100-s.weightTrail)+'%',{'font-family':'DM Mono,monospace','font-size':11,
     fill:'#1E4D33','font-weight':'700','text-anchor':'middle'}));
 
   // BALL — on the target line, x interpolated between trail & lead foot by ballPos
@@ -536,10 +656,10 @@ function drawTop(s){
   if(s.tee){
     svg.appendChild(el('line',{x1:ballX,y1:lineY,x2:ballX,y2:lineY+12,stroke:'#E8823A','stroke-width':2.5,'stroke-linecap':'round'}));
   }
-  // ball shadow + ball
-  svg.appendChild(el('ellipse',{cx:ballX,cy:lineY+2,rx:9,ry:4,fill:'rgba(0,0,0,0.14)'}));
-  svg.appendChild(el('circle',{cx:ballX,cy:lineY,r:9,fill:'#fff',stroke:'#cfcfcf','stroke-width':1}));
-  svg.appendChild(el('circle',{cx:ballX-2,cy:lineY-2,r:2,fill:'rgba(0,0,0,0.05)'}));
+  // ball shadow + ball (1.68" regulation, to scale)
+  svg.appendChild(el('ellipse',{cx:ballX,cy:lineY+ballR*0.4,rx:ballR,ry:ballR*0.45,fill:'rgba(0,0,0,0.14)'}));
+  svg.appendChild(el('circle',{cx:ballX,cy:lineY,r:ballR,fill:'#fff',stroke:'#c9cfc9','stroke-width':1}));
+  svg.appendChild(el('circle',{cx:ballX-ballR*0.28,cy:lineY-ballR*0.28,r:ballR*0.26,fill:'rgba(0,0,0,0.05)'}));
 
   // ball-position callout
   svg.appendChild(el('line',{x1:ballX,y1:lineY-9,x2:ballX,y2:lineY-30,stroke:'#C9931F','stroke-width':1.5,'stroke-dasharray':'3 2'}));
@@ -549,12 +669,12 @@ function drawTop(s){
   svg.appendChild(txt(lblX+lblW/2,lineY-34,s.s_ball,{'font-family':'DM Mono,monospace','font-size':10,
     fill:'#143524','text-anchor':'middle','font-weight':'600'}));
 
-  // STANCE WIDTH dimension (below feet)
-  const dimY=Math.max(leadY,trailY)+70;
+  // STANCE WIDTH dimension (below feet) — labeled in inches, to scale
+  const dimY=Math.max(leadY,trailY)+shoeLen/2+44;
   svg.appendChild(el('line',{x1:trailX,y1:dimY,x2:leadX,y2:dimY,stroke:'#3E7A52','stroke-width':1.5}));
   svg.appendChild(el('line',{x1:trailX,y1:dimY-5,x2:trailX,y2:dimY+5,stroke:'#3E7A52','stroke-width':1.5}));
   svg.appendChild(el('line',{x1:leadX,y1:dimY-5,x2:leadX,y2:dimY+5,stroke:'#3E7A52','stroke-width':1.5}));
-  svg.appendChild(txt(cx,dimY-6,'STANCE WIDTH',{'font-family':'DM Mono,monospace','font-size':9,
+  svg.appendChild(txt(cx,dimY-6,'STANCE  '+Math.round(stanceIn)+'"',{'font-family':'DM Mono,monospace','font-size':9,
     fill:'#266a43','text-anchor':'middle','letter-spacing':'0.1em'}));
 
   // STATUS LABELS (top center) — stacked: stance/shape, flight, lie
@@ -564,6 +684,7 @@ function drawTop(s){
   else if(open<-6) topLabels.push('CLOSED STANCE');
   if(s.trajLabel) topLabels.push(s.trajLabel);
   if(s.slopeLabel) topLabels.push(hw(s.slopeLabel));
+  if(s.lieLabel) topLabels.push(s.lieLabel);
   topLabels.forEach((lbl,i)=>{
     svg.appendChild(txt(cx,22+i*15,lbl,{'font-family':'DM Mono,monospace','font-size':10,
       fill:'#C9931F','text-anchor':'middle','letter-spacing':'0.1em','font-weight':'600'}));
@@ -601,132 +722,6 @@ function drawSpineGauge(svg,gx,gy,tilt,sideSign){
     fill:'#143524','text-anchor':'middle','font-weight':'600'}));
 }
 
-/* ============ SLOPE / LIE PROFILE INSET ============ */
-/* A clear side schematic shown only when a slope/lie is selected.
-   updown = uphill/downhill (viewed down the target line);
-   cross  = ball above / below feet (cross-slope, ball drawn at its true height). */
-function drawSlope(s){
-  const svg=document.getElementById('svg-slope');
-  const p=s.slopeProfile;
-  if(!p){ svg.style.display='none'; svg.innerHTML=''; return; }
-  svg.style.display='block'; svg.innerHTML='';
-  const W=400,H=170,cx=200;
-  const sideSign=(hand==='R')?-1:1;        // target/lead side on screen (−1 = left)
-
-  // panel
-  svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#eef5ec'}));
-  svg.appendChild(txt(14,20,p.name.toUpperCase(),{'font-family':'Barlow Condensed,sans-serif','font-size':15,
-    fill:'#1E4D33','font-weight':'700','letter-spacing':'0.04em'}));
-  svg.appendChild(txt(W-14,20,'SIDE VIEW',{'font-family':'DM Mono,monospace','font-size':8,
-    fill:'#266a43','text-anchor':'end','letter-spacing':'0.12em'}));
-
-  // stick golfer drawn standing along a given "up" unit vector from a hip point
-  function golfer(hipx,hipy,ux,uy,footL,footR){
-    const torso=30, head=12, legW=4;
-    const shx=hipx+ux*torso, shy=hipy+uy*torso;          // shoulders
-    const hx=shx+ux*head, hy=shy+uy*head;                // head center
-    // legs
-    svg.appendChild(el('line',{x1:hipx,y1:hipy,x2:footL[0],y2:footL[1],stroke:'#2D5A3D','stroke-width':legW,'stroke-linecap':'round'}));
-    svg.appendChild(el('line',{x1:hipx,y1:hipy,x2:footR[0],y2:footR[1],stroke:'#2D5A3D','stroke-width':legW,'stroke-linecap':'round'}));
-    // torso
-    svg.appendChild(el('line',{x1:hipx,y1:hipy,x2:shx,y2:shy,stroke:'#1E4D33','stroke-width':6,'stroke-linecap':'round'}));
-    // shoulder bar (perpendicular to spine) to show shoulder tilt
-    const px=-uy, py=ux;                                  // perpendicular
-    svg.appendChild(el('line',{x1:shx-px*12,y1:shy-py*12,x2:shx+px*12,y2:shy+py*12,stroke:'#1E4D33','stroke-width':4,'stroke-linecap':'round'}));
-    // head
-    svg.appendChild(el('circle',{cx:hx,cy:hy,r:8,fill:'#1E4D33'}));
-    return {shx,shy};
-  }
-
-  if(p.profile==='updown'){
-    // Down-the-line side profile. Target on the lead side; slope tilts toward target.
-    const baseY=112, rise=30;
-    const leadX = sideSign<0 ? 92 : 308;     // target/lead side
-    const trailX= sideSign<0 ? 308 : 92;
-    // uphill: lead foot HIGH (smaller y); downhill: lead foot LOW (larger y)
-    const leadY  = baseY + (p.up ? -rise : +rise);
-    const trailY = baseY + (p.up ? +rise : -rise);
-    // ground
-    svg.appendChild(el('path',{d:`M${leadX},${leadY} L${trailX},${trailY} L${trailX},${H} L${leadX},${H} Z`,fill:'#cfe6cf'}));
-    svg.appendChild(el('line',{x1:leadX,y1:leadY,x2:trailX,y2:trailY,stroke:'#3E7A52','stroke-width':3,'stroke-linecap':'round'}));
-    const gY=(x)=> leadY + (x-leadX)/(trailX-leadX)*(trailY-leadY);
-    for(let i=0;i<=12;i++){const xx=leadX+(trailX-leadX)*i/12, yy=gY(xx);
-      svg.appendChild(el('line',{x1:xx,y1:yy,x2:xx,y2:yy+8,stroke:'#9cc39c','stroke-width':1}));}
-    // target arrow up the slope toward lead side
-    svg.appendChild(el('line',{x1:cx,y1:34,x2:leadX+sideSign*-6,y2:leadY-26,stroke:'#143524','stroke-width':1.5,'stroke-dasharray':'4 3'}));
-    svg.appendChild(txt(leadX,leadY-30,'TARGET',{'font-family':'DM Mono,monospace','font-size':8,fill:'#143524','text-anchor':'middle'}));
-
-    // feet straddle centre; spine PERPENDICULAR to slope (shoulders parallel to hill)
-    const fLeadX=cx+sideSign*22, fTrailX=cx-sideSign*22;
-    const fLeadY=gY(fLeadX), fTrailY=gY(fTrailX);
-    // up-normal (perpendicular to slope, pointing up the screen)
-    let nx=-(trailY-leadY), ny=(trailX-leadX);           // rotate slope vec +90
-    const nlen=Math.hypot(nx,ny); nx/=nlen; ny/=nlen;
-    if(ny>0){ nx=-nx; ny=-ny; }                          // ensure it points up
-    const footMidX=(fLeadX+fTrailX)/2, footMidY=(fLeadY+fTrailY)/2;
-    const hipLen=30, hipx=footMidX+nx*hipLen, hipy=footMidY+ny*hipLen;
-    golfer(hipx,hipy,nx,ny,[fLeadX,fLeadY],[fTrailX,fTrailY]);
-
-    // weight ring on the LOW foot (larger y)
-    const lowF = fLeadY>fTrailY ? [fLeadX,fLeadY] : [fTrailX,fTrailY];
-    svg.appendChild(el('circle',{cx:lowF[0],cy:lowF[1]+3,r:8,fill:'none',stroke:'#C9931F','stroke-width':2.5}));
-    svg.appendChild(txt(lowF[0],lowF[1]+24,'weight on low foot',{'font-family':'DM Mono,monospace','font-size':8,fill:'#C9931F','text-anchor':'middle','font-weight':'600'}));
-    // ball toward the HIGH foot
-    const highX = fLeadY<fTrailY ? fLeadX : fTrailX;
-    svg.appendChild(el('circle',{cx:highX,cy:gY(highX)-5,r:5,fill:'#fff',stroke:'#bbb'}));
-
-    svg.appendChild(txt(14,H-12,hw(p.club+' · '+p.aim),{'font-family':'DM Mono,monospace','font-size':9,fill:'#143524','font-weight':'600'}));
-    svg.appendChild(txt(W-14,H-12,'Shoulders match the slope',{'font-family':'DM Mono,monospace','font-size':8.5,fill:'#266a43','text-anchor':'end'}));
-  }
-
-  if(p.profile==='cross'){
-    // Cross-slope facing the golfer. Ground tilts; ball sits at its TRUE height
-    // (above the feet for "Ball Above", below for "Ball Below").
-    const above=(p.dir==='above');
-    const gx=150, footY=120, bx=270, drop=34;
-    // ground line: ball side higher (above) or lower (below) than the stance
-    const standY=footY;
-    const ballGroundY = above ? footY-drop : footY+drop;
-    const lX=70, rX=330;
-    const lY = standY + (ballGroundY-standY)*(lX-gx)/(bx-gx);
-    const rY = standY + (ballGroundY-standY)*(rX-gx)/(bx-gx);
-    svg.appendChild(el('path',{d:`M${lX},${lY} L${rX},${rY} L${rX},${H} L${lX},${H} Z`,fill:'#cfe6cf'}));
-    svg.appendChild(el('line',{x1:lX,y1:lY,x2:rX,y2:rY,stroke:'#3E7A52','stroke-width':3,'stroke-linecap':'round'}));
-    const gY=(x)=> lY + (x-lX)/(rX-lX)*(rY-lY);
-    for(let i=0;i<=12;i++){const xx=lX+(rX-lX)*i/12, yy=gY(xx);
-      svg.appendChild(el('line',{x1:xx,y1:yy,x2:xx,y2:yy+8,stroke:'#9cc39c','stroke-width':1}));}
-
-    // golfer stands vertical at gx. Above → tall (less bend); Below → sit down (more bend)
-    const legLen = above ? 40 : 30;          // below: shorter legs look = more knee flex/lower
-    const hipx=gx, hipy=gY(gx)-legLen;
-    // feet slightly apart
-    const fL=[gx-12,gY(gx-12)], fR=[gx+12,gY(gx+12)];
-    golfer(hipx,hipy,0,-1,fL,fR);            // up = straight vertical
-    // knee-flex tick for "below"
-    if(!above){ svg.appendChild(txt(gx-30,hipy+18,'more flex',{'font-family':'DM Mono,monospace','font-size':7.5,fill:'#266a43','text-anchor':'middle'})); }
-
-    // arms reach out to the ball at its true height
-    const shY=hipy-30;
-    const by=gY(bx) - 5;
-    svg.appendChild(el('line',{x1:hipx,y1:shY+4,x2:bx,y2:by,stroke:'#3E7A52','stroke-width':3,'stroke-linecap':'round'}));
-    svg.appendChild(el('circle',{cx:bx,cy:by,r:5,fill:'#fff',stroke:'#bbb'}));
-    // height reference: dashed line from feet level across to ball
-    svg.appendChild(el('line',{x1:gx,y1:gY(gx),x2:bx,y2:gY(gx),stroke:'#C9931F','stroke-width':1,'stroke-dasharray':'3 2',opacity:0.6}));
-    svg.appendChild(el('line',{x1:bx,y1:gY(gx),x2:bx,y2:by,stroke:'#C9931F','stroke-width':1,'stroke-dasharray':'3 2',opacity:0.8}));
-    svg.appendChild(txt(bx+8, (gY(gx)+by)/2, above?'ball higher':'ball lower',
-      {'font-family':'DM Mono,monospace','font-size':7.5,fill:'#C9931F','font-weight':'600'}));
-
-    // weight cue
-    svg.appendChild(txt(gx,gY(gx)+22, above?'weight → toes':'weight → heels',
-      {'font-family':'DM Mono,monospace','font-size':8.5,fill:'#C9931F','text-anchor':'middle','font-weight':'600'}));
-
-    svg.appendChild(txt(14,H-12,hw(p.club+' · '+p.aim),{'font-family':'DM Mono,monospace','font-size':9,fill:'#143524','font-weight':'600'}));
-    svg.appendChild(txt(W-14,H-12, above?'Stand tall, swing flatter':'Sit down, swing steeper',
-      {'font-family':'DM Mono,monospace','font-size':8.5,fill:'#266a43','text-anchor':'end'}));
-  }
-}
-
-
 /* ============ RENDER ============ */
 function render(){
   const base=SHOTS[idx];
@@ -762,6 +757,12 @@ function render(){
       document.getElementById('sl-'+k).classList.toggle('on',slope===k));
   } else rowSlope.classList.add('hidden');
 
+  const rowLie=document.getElementById('row-lie');
+  if(base.full){ rowLie.classList.remove('hidden');
+    ['fairway','fringe','lightrough','heavyrough','hardpan'].forEach(k=>
+      document.getElementById('li-'+k).classList.toggle('on',lie===k));
+  } else rowLie.classList.add('hidden');
+
   // ---- specs ----
   document.getElementById('s-width').textContent=s.s_width;
   document.getElementById('s-ball').textContent=s.s_ball;
@@ -789,7 +790,6 @@ function render(){
   document.getElementById('next').disabled=(idx===SHOTS.length-1);
 
   drawTop(s);
-  drawSlope(s);
 }
 
 /* swipe support on the diagram */
